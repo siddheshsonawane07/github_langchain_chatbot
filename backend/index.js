@@ -23,30 +23,29 @@ app.get('/user/repos', async (req, res) => {
   try {
     // const {data} = await octokit.request("GET /user/repos")
     const data = await octokit.paginate("GET /user/repos",{per_page : 100})
-    res.json(data)
+    const result = data.map(repo=>({
+      name: repo.name,
+      url: repo.html_url,
+      language: repo.language || "Not Specified",
+      description: repo.description || "No Description"
+    }))
+    res.json(result)
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch repositories' });
   }
 });
 
-// app.get('/repo', async (req, res) => {
-//   try {
-//     const owner = req.query.owner || 'siddheshsonawane07'; 
-//     const repo = req.query.repo || 'proctorise'; 
-//     const { data } = await octokit.rest.repos.get({
-//       owner,
-//       repo,
-//       headers: {
-//         'X-GitHub-Api-Version': '2022-11-28',
-//       },
-//     });
-//     res.json(data);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Failed to fetch repository details' });
-//   }
-// });
+app.get('/user/reposss', async (req, res) => {
+  try {
+    // const {data} = await octokit.request("GET /user/repos")
+    const data = await octokit.paginate("GET /user/repos",{per_page : 100})
+    res.json(data)
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch repositories' });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
