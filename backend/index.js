@@ -21,20 +21,34 @@ app.get('/user', async (req, res) => {
 
 app.get('/user/repos', async (req, res) => {
   try {
-    // const {data} = await octokit.request("GET /user/repos")
-    const data = await octokit.paginate("GET /user/repos",{per_page : 100})
-    const result = data.map(repo=>({
-      name: repo.name,
-      url: repo.html_url,
-      language: repo.language || "Not Specified",
-      description: repo.description || "No Description"
-    }))
-    res.json(result)
+    const data = await octokit.paginate("GET /user/repos", { per_page: 100 });
+    const repoDetails = await Promise.all(
+      data.map(async (repo) => {
+        let languages = "Not Specified";
+        try {
+          const languageResponse = await octokit.request(repo.languages_url);
+          languages = Object.keys(languageResponse.data).join(", ") || "Not Specified";
+        } catch (err) {
+          console.error(`Error fetching languages for ${repo.name}:`, err.message);
+        }
+
+        return {
+          name: repo.name,
+          url: repo.html_url,
+          language: languages,
+          description: repo.description || "No Description",
+          deployed_at: repo.homepage || "Not Deployed",
+        };
+      })
+    );
+
+    res.json(repoDetails);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch repositories' });
   }
 });
+
 
 app.get('/user/reposss', async (req, res) => {
   try {
