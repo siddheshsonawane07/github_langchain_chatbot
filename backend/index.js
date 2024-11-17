@@ -1,38 +1,29 @@
 import express, { json } from 'express';
-import { Octokit } from 'octokit';
+import { Octokit } from '@octokit/rest';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
 const app = express();
 const port = 3000;
-const octokit = new Octokit({ auth: process.env.GITHUB_AUTH_TOKEN });
+const octokit = new Octokit({auth : process.env.GITHUB_AUTH_TOKEN});
 app.use(json());
 
-// Home route
-app.get('/', (req, res) => {
-  res.send('Home page');
-});
-
 app.get('/user', async (req, res) => {
-  try {
-    const {
-      data: { login },
-    } = await octokit.rest.users.getAuthenticated();
-    res.json({ login });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch user details' });
+  try{
+    const { data } = await octokit.request("/user");
+    res.json(data)
+  }catch (err){
+    res.send(err)
   }
 });
 
+
 app.get('/user/repos', async (req, res) => {
   try {
-    const username = req.query.username || (await octokit.rest.users.getAuthenticated()).data.login;
-    const { data } = await octokit.rest.repos.listForUser({
-      username, 
-    });
-    res.json(data);
+    // const {data} = await octokit.request("GET /user/repos")
+    const data = await octokit.paginate("GET /user/repos",{per_page : 100})
+    res.json(data)
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch repositories' });
