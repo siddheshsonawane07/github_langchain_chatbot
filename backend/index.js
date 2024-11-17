@@ -22,14 +22,37 @@ app.get('/user', async (req, res) => {
 app.get('/user/repos', async (req, res) => {
   try {
     const data = await octokit.paginate("GET /user/repos", { per_page: 100 });
+
     const repoDetails = await Promise.all(
       data.map(async (repo) => {
         let languages = "Not Specified";
+        let readmeContent = "README not available";
+
+        // Fetch languages
         try {
           const languageResponse = await octokit.request(repo.languages_url);
           languages = Object.keys(languageResponse.data).join(", ") || "Not Specified";
         } catch (err) {
           console.error(`Error fetching languages for ${repo.name}:`, err.message);
+        }
+
+        // Fetch README.md
+        try {
+          const readmeResponse = await octokit.request("GET /repos/{owner}/{repo}/readme", {
+            owner: repo.owner.login,
+            repo: repo.name,
+          });
+          const buffer = Buffer.from(readmeResponse.data.content, "base64");
+          
+          // Clean up the README content
+          readmeContent = buffer.toString("utf8")
+            .replace(/\\n/g, '\n')  // Replace \n with actual line breaks
+            .replace(/\\r/g, '')    // Remove \r if present
+            .replace(/\\"/g, '"')   // Replace escaped quotes with regular quotes
+            .replace(/\\/g, '')     // Remove any remaining backslashes
+            .trim();                // Remove leading/trailing whitespace
+        } catch (err) {
+          console.error(`Error fetching README for ${repo.name}:`, err.message);
         }
 
         return {
@@ -38,6 +61,7 @@ app.get('/user/repos', async (req, res) => {
           language: languages,
           description: repo.description || "No Description",
           deployed_at: repo.homepage || "Not Deployed",
+          readme: readmeContent,
         };
       })
     );
@@ -48,7 +72,6 @@ app.get('/user/repos', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch repositories' });
   }
 });
-
 
 app.get('/user/reposss', async (req, res) => {
   try {
