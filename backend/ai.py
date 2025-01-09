@@ -1,10 +1,10 @@
 import os
 import requests
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain.docstore.document import Document
 from langchain.chains import RetrievalQA
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -21,7 +21,6 @@ def fetch_repositories():
         print(f"Error fetching repositories: {e}")
         return []
 
-# Format data into Document objects for FAISS
 def format_repo_data_for_faiss(repo_data):
     """Convert repository data to LangChain Document objects."""
     documents = []
@@ -37,7 +36,6 @@ def format_repo_data_for_faiss(repo_data):
         documents.append(Document(page_content=content, metadata={"repo_name": repo.get("name", "N/A")}))
     return documents
 
-# Initialize embeddings and FAISS store
 def create_faiss_index(documents, index_path="repo_faiss_index"):
     """Create and save FAISS index."""
     embeddings = OpenAIEmbeddings()  # Use OpenAI for embeddings
@@ -50,9 +48,9 @@ def create_faiss_index(documents, index_path="repo_faiss_index"):
 def load_faiss_index(index_path="repo_faiss_index"):
     """Load FAISS index."""
     embeddings = OpenAIEmbeddings()
-    return FAISS.load_local(index_path, embeddings)
+    return FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
 
-# Query the index
+
 def interact_with_repositories(faiss_index):
     """Set up a conversational interface with the repositories."""
     llm = ChatOpenAI(model="gpt-4")      
@@ -67,11 +65,12 @@ def interact_with_repositories(faiss_index):
         result = qa_chain.run(user_input)
         print(f"AI: {result}")
 
-if __name__ == "__main__":
-    repo_data = fetch_repositories()
-    if repo_data:
-        documents = format_repo_data_for_faiss(repo_data)
-        create_faiss_index(documents)
 
-    faiss_index = load_faiss_index()
-    interact_with_repositories(faiss_index)
+repo_data = fetch_repositories()
+if repo_data:
+    documents = format_repo_data_for_faiss(repo_data)
+    create_faiss_index(documents)
+
+faiss_index = load_faiss_index()
+
+interact_with_repositories(faiss_index)
