@@ -67,12 +67,12 @@ app.get("/user/repos", async (req, res) => {
         }
 
         return {
-          name: repo.name,
-          url: repo.html_url,
+          name: repo.name ,
+          url: repo.html_url || "Not Specified",
           language: languages,
           description: repo.description || "No Description",
           deployed_at: repo.homepage || "Not Deployed",
-          readme: readmeContent,
+          readme: readmeContent || "README not available",
         };
       })
     );

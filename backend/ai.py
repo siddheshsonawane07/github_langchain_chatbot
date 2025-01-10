@@ -33,12 +33,14 @@ def format_repo_data_for_faiss(repo_data):
             f"Deployed At: {repo.get('deployed_at', 'Not Deployed')}\n"
             f"README Content: {repo.get('readme', 'No README available')[:500]}..."  # Truncated
         )
-        documents.append(Document(page_content=content, metadata={"repo_name": repo.get("name", "N/A")}))
+        documents.append(Document(page_content=content, metadata={"name": repo.get("name")}))
+    # for documet in documents:
+    #     print(documet.page_content)
     return documents
 
 def create_faiss_index(documents, index_path="repo_faiss_index"):
     """Create and save FAISS index."""
-    embeddings = OpenAIEmbeddings()  # Use OpenAI for embeddings
+    embeddings = OpenAIEmbeddings()  
     vectorstore = FAISS.from_documents(documents, embeddings)
     vectorstore.save_local(index_path)
     print(f"FAISS index saved at {index_path}")
@@ -54,7 +56,7 @@ def load_faiss_index(index_path="repo_faiss_index"):
 def interact_with_repositories(faiss_index):
     """Set up a conversational interface with the repositories."""
     llm = ChatOpenAI(model="gpt-4")      
-    retriever = faiss_index.as_retriever(search_type="similarity", search_kwargs={"k": 3})
+    retriever = faiss_index.as_retriever(search_type="similarity", search_kwargs={"k": 20})
     qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 
     print("Start chatting about the repositories! Type 'exit' to end the conversation.")
@@ -63,7 +65,7 @@ def interact_with_repositories(faiss_index):
         if user_input.lower() == "exit":
             break
         result = qa_chain.run(user_input)
-        print(f"AI: {result}")
+        print(f"{result}")
 
 
 repo_data = fetch_repositories()
