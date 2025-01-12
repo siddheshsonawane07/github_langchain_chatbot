@@ -1,13 +1,24 @@
-import express, { json } from "express";
 import { Octokit } from "@octokit/rest";
 import * as dotenv from "dotenv";
+import express, { json } from "express";
+import helmet from "helmet";
+import morgan from "morgan";
 
 dotenv.config();
 
+// Validate environment variables
+if (!process.env.GITHUB_AUTH_TOKEN) {
+  throw new Error("GITHUB_AUTH_TOKEN is not set in the environment variables");
+}
+
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const octokit = new Octokit({ auth: process.env.GITHUB_AUTH_TOKEN });
+
+// Middleware
+app.use(helmet()); // Security headers
 app.use(json());
+app.use(morgan("combined")); // Logging
 
 app.get("/", (req, res) => {
   res.send("Hello from server");
@@ -18,7 +29,8 @@ app.get("/user", async (req, res) => {
     const { data } = await octokit.request("/user");
     res.json(data);
   } catch (err) {
-    res.send(err);
+    console.error("Error fetching user data:", err.message);
+    res.status(500).json({ error: "Failed to fetch user data" });
   }
 });
 
@@ -67,7 +79,7 @@ app.get("/user/repos", async (req, res) => {
         }
 
         return {
-          name: repo.name ,
+          name: repo.name,
           url: repo.html_url || "Not Specified",
           language: languages,
           description: repo.description || "No Description",
@@ -79,18 +91,7 @@ app.get("/user/repos", async (req, res) => {
 
     res.json(repoDetails);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to fetch repositories" });
-  }
-});
-
-app.get("/user/reposss", async (req, res) => {
-  try {
-    // const {data} = await octokit.request("GET /user/repos")
-    const data = await octokit.paginate("GET /user/repos", { per_page: 100 });
-    res.json(data);
-  } catch (error) {
-    console.error(error);
+    console.error("Error fetching repositories:", error.message);
     res.status(500).json({ error: "Failed to fetch repositories" });
   }
 });
